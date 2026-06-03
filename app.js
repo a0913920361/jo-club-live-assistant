@@ -9,7 +9,14 @@ const defaultState = {
   staff: {
     status: "14:00-24:00",
     focus: "咖啡、輕食、桌遊、聚會",
-    feature: "今日推薦：4 人分享餐、甜點咖啡組合、桌遊聚會與生日活動可由店員協助安排。"
+    feature: "今日推薦：4 人分享餐、甜點咖啡組合、桌遊聚會與生日活動可由店長小江協助安排。"
+  },
+  feedback: {
+    ratings: {},
+    favorite: "",
+    suggestion: "",
+    note: "",
+    submittedAt: ""
   }
 };
 
@@ -31,8 +38,31 @@ const menuText = {
   sets: "套餐：A 個人套餐 230、B 雙人套餐 430、4 人分享餐 800，套餐內容可更換。"
 };
 
+const screenNames = ["photo", "ask", "today", "member", "feedback"];
+const screenScrollTargets = {
+  photo: "#screen-photo .tool-panel",
+  ask: "#questionInput",
+  today: "#screen-today .tool-panel",
+  member: "#screen-member .tool-panel",
+  feedback: "#screen-feedback .tool-panel"
+};
+const focusTargets = {
+  ask: "#questionInput"
+};
+
 let state = loadState();
 let selectedPhotoDataUrl = "";
+let toastTimer = 0;
+
+const feedbackItems = [
+  { key: "arrival", label: "走進店內第一印象" },
+  { key: "comfort", label: "環境舒適度" },
+  { key: "cleanliness", label: "整潔衛生" },
+  { key: "service", label: "人員服務態度" },
+  { key: "food", label: "餐點飲品滿意度" },
+  { key: "social", label: "聚會娛樂體驗" },
+  { key: "return", label: "再訪意願" }
+];
 
 function $(selector) {
   return document.querySelector(selector);
@@ -44,7 +74,13 @@ function $$(selector) {
 
 function loadState() {
   try {
-    return { ...defaultState, ...JSON.parse(localStorage.getItem(stateKey) || "{}") };
+    const saved = JSON.parse(localStorage.getItem(stateKey) || "{}");
+    return {
+      ...defaultState,
+      ...saved,
+      staff: { ...defaultState.staff, ...(saved.staff || {}) },
+      feedback: { ...defaultState.feedback, ...(saved.feedback || {}) }
+    };
   } catch {
     return { ...defaultState };
   }
@@ -59,60 +95,81 @@ function getUrlNickname() {
   return (params.get("name") || params.get("nickname") || "").trim();
 }
 
+function getInitialScreenName() {
+  const params = new URLSearchParams(window.location.search);
+  const requested = (params.get("tab") || params.get("screen") || params.get("view") || window.location.hash.slice(1)).trim();
+  if (requested === "staff") return "feedback";
+  return screenNames.includes(requested) ? requested : "photo";
+}
+
 function getMemberNickname() {
   return state.nickname || getUrlNickname() || "會員";
 }
 
 function getScreenScrollTarget(name) {
-  const targets = {
-    photo: "#screen-photo .tool-panel",
-    ask: "#questionInput",
-    today: "#screen-today .tool-panel",
-    member: "#screen-member .tool-panel",
-    staff: "#screen-staff .tool-panel"
-  };
-  return $(targets[name]) || $(`#screen-${name}`);
+  return $(screenScrollTargets[name]) || $(`#screen-${name}`);
 }
 
-function scrollToScreenTarget(name) {
+function getFixedTopOffset() {
+  const topbar = $(".topbar");
+  return (topbar?.getBoundingClientRect().height || 72) + 14;
+}
+
+function scrollToScreenTarget(name, { focus = true, behavior = "smooth" } = {}) {
   const target = getScreenScrollTarget(name);
   if (!target) return;
 
   window.requestAnimationFrame(() => {
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    const top = Math.max(0, window.scrollY + target.getBoundingClientRect().top - getFixedTopOffset());
+    window.scrollTo({ top, behavior });
 
-    if (name === "ask") {
+    const focusTarget = focus ? $(focusTargets[name]) : null;
+    if (focusTarget) {
       window.setTimeout(() => {
         try {
-          $("#questionInput")?.focus({ preventScroll: true });
+          focusTarget.focus({ preventScroll: true });
         } catch {
-          $("#questionInput")?.focus();
+          focusTarget.focus();
         }
-      }, 350);
+      }, 220);
+      window.setTimeout(() => scrollToScreenTarget(name, { focus: false, behavior: "auto" }), 520);
     }
   });
 }
 
-function activateScreen(name) {
-  if (window.joClubShowScreen && activateScreen !== window.joClubShowScreen) {
-    window.joClubShowScreen(name);
-    return;
-  }
+function activateScreen(name, options = {}) {
+  if (!screenNames.includes(name)) return;
 
   $$("[data-screen]").forEach((screen) => {
     screen.classList.toggle("is-active", screen.dataset.screen === name);
+    screen.setAttribute("aria-hidden", String(screen.dataset.screen !== name));
   });
 
   $$("[data-tab-target]").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.tabTarget === name);
+    button.setAttribute("aria-current", button.dataset.tabTarget === name ? "page" : "false");
   });
 
-  scrollToScreenTarget(name);
+  if (options.updateHash) {
+    const nextUrl = `${window.location.pathname}${window.location.search}#${name}`;
+    window.history.replaceState(null, "", nextUrl);
+  }
+
+  scrollToScreenTarget(name, options);
 }
 
 function attachNavigation() {
   $$("[data-tab-target]").forEach((button) => {
-    button.addEventListener("click", () => activateScreen(button.dataset.tabTarget));
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      activateScreen(button.dataset.tabTarget, { updateHash: true });
+    });
+  });
+
+  window.addEventListener("hashchange", () => {
+    const requested = window.location.hash.slice(1);
+    const name = requested === "staff" ? "feedback" : requested;
+    if (screenNames.includes(name)) activateScreen(name, { behavior: "auto", focus: false });
   });
 }
 
@@ -157,8 +214,20 @@ function appendBubble(text, role) {
   bubble.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
+function showToast(message) {
+  const toast = $("#appToast");
+  if (!toast) return;
+
+  window.clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.hidden = false;
+  toastTimer = window.setTimeout(() => {
+    toast.hidden = true;
+  }, 2800);
+}
+
 function shouldHandoff(text) {
-  return /生日|壽星|包場|預約|活動|企劃|規劃|包廂|二樓|私人|德州|麻將|網咖|超過|24|特殊|多人|投影|專員|詳哥|康哥/.test(text);
+  return /生日|壽星|包場|預約|活動|企劃|規劃|包廂|二樓|私人|德州|麻將|網咖|超過|24|特殊|多人|投影|專員|店長|小江/.test(text);
 }
 
 function fallbackAnswer(question) {
@@ -182,7 +251,7 @@ function fallbackAnswer(question) {
     return `JO CLUB 地址是 ${venueInfo.address}，電話 ${venueInfo.phone}，營業時間 ${venueInfo.hours}。停車資訊可從官方 LINE 的停車資訊選單查看。`;
   }
 
-  return "我可以協助你查菜單、會員優惠、今日推薦、座位安排與活動規劃。這題如果需要更精準安排，建議把需求貼到官方 LINE，讓詳哥或康哥接洽。";
+  return "我可以協助你查菜單、會員優惠、今日推薦、座位安排與活動規劃。這題如果需要更精準安排，建議把需求貼到官方 LINE，讓店長小江接洽。";
 }
 
 async function askAssistant({ question, mode = "文字提問", imageDataUrl = "", photoKind = "" }) {
@@ -314,7 +383,7 @@ function fallbackPhotoAnswer(kind) {
   const answers = {
     菜單: `${menuText.coffee} ${menuText.food} ${menuText.sets}`,
     開幕海報: `${venueInfo.membership} 適合引導客人加入官方 LINE 會員後再消費。`,
-    店內空間: "店內適合朋友聚會、桌遊、輕食、投影與活動安排。多人或特殊需求建議先由店員確認。",
+    店內空間: "店內適合朋友聚會、桌遊、輕食、投影與活動安排。多人或特殊需求建議先由店長小江確認。",
     外觀招牌: `這是 JO SOCIAL CLUB 店面資訊，可引導客人確認地址：${venueInfo.address}。`,
     "LINE/IG": `官方 LINE 可用來入會、預約與詢問；IG 是 ${venueInfo.instagram}。`
   };
@@ -346,7 +415,7 @@ function attachHandoffFlow() {
       `希望時間：${$("#handoffTime").value.trim() || "未填"}`,
       `人數：${$("#handoffPeople").value.trim() || "未填"}`,
       `需求：${$("#handoffDetail").value.trim() || state.lastQuestion || "未填"}`,
-      "請詳哥或康哥協助接洽。"
+      "請店長小江協助接洽。"
     ].join("\n");
 
     $("#taskMessage").textContent = message;
@@ -358,8 +427,10 @@ function attachHandoffFlow() {
     try {
       await navigator.clipboard.writeText(text);
       $("#copyTask").textContent = "已複製，可貼到官方 LINE";
+      showToast("需求卡已複製，回到 LINE 對話貼上即可。");
     } catch {
       $("#copyTask").textContent = "請手動複製上方內容";
+      showToast("手機若無法自動複製，請長按需求卡內容後複製。");
     }
   });
 }
@@ -386,7 +457,7 @@ function buildRecommendations() {
       title: has("安靜包廂") ? "安靜座位需求" : "桌遊與投影安排",
       tag: "現場服務",
       body: has("安靜包廂")
-        ? "若需要比較安靜的空間，建議先在官方 LINE 留言，讓店員依當天人流安排。"
+        ? "若需要比較安靜的空間，建議先在官方 LINE 留言，讓店長小江依當天人流安排。"
         : "現場可配合桌遊、投影與聚會需求，多人活動建議提前 1 天告知。"
     },
     {
@@ -447,19 +518,132 @@ function attachMemberFlow() {
   });
 }
 
-function attachStaffFlow() {
-  $("#staffForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    state.staff = {
-      status: $("#staffStatus").value.trim() || defaultState.staff.status,
-      focus: $("#staffFocus").value.trim() || defaultState.staff.focus,
-      feature: $("#staffFeature").value.trim() || defaultState.staff.feature
-    };
-    saveState();
-    updateStoreHeader();
-    buildRecommendations();
-    activateScreen("today");
+function ratingText(score) {
+  const labels = {
+    1: "需要改善",
+    2: "普通",
+    3: "還不錯",
+    4: "滿意",
+    5: "非常滿意"
+  };
+  return labels[score] || "未評分";
+}
+
+function renderFeedbackRatings() {
+  const container = $("#feedbackRatings");
+  if (!container) return;
+
+  container.innerHTML = feedbackItems
+    .map((item) => {
+      const current = Number(state.feedback.ratings[item.key] || 0);
+      const buttons = [1, 2, 3, 4, 5]
+        .map((score) => `
+          <button
+            class="${score === current ? "is-selected" : ""}"
+            type="button"
+            data-rating-key="${escapeHtml(item.key)}"
+            data-rating-score="${score}"
+            aria-label="${escapeHtml(item.label)} ${score} 分"
+          >${score}</button>
+        `)
+        .join("");
+
+      return `
+        <div class="rating-row">
+          <div>
+            <strong>${escapeHtml(item.label)}</strong>
+            <span>${escapeHtml(ratingText(current))}</span>
+          </div>
+          <div class="rating-buttons">${buttons}</div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function buildFeedbackMessage() {
+  const lines = [
+    "JO CLUB 客人回饋卡",
+    `會員：${getMemberNickname()}`,
+    "給：店長小江",
+    "來源：官方 LINE JO 助手",
+    "評分："
+  ];
+
+  feedbackItems.forEach((item) => {
+    const score = Number(state.feedback.ratings[item.key] || 0);
+    lines.push(`- ${item.label}：${score || "未評"} 分（${ratingText(score)}）`);
   });
+
+  lines.push(`最喜歡的地方：${state.feedback.favorite || "未填"}`);
+  lines.push(`建議改善：${state.feedback.suggestion || "未填"}`);
+  lines.push(`想補充給小江：${state.feedback.note || "未填"}`);
+
+  return lines.join("\n");
+}
+
+function updateFeedbackSummary(message = "") {
+  const summary = $("#feedbackSummary");
+  if (!summary) return;
+
+  if (!state.feedback.submittedAt) {
+    summary.innerHTML = `
+      <p class="answer-label">回饋狀態</p>
+      <h3>還沒有送出回饋</h3>
+      <p>評分後會自動整理出重點，方便店長小江看見客人的實際感受與改善建議。</p>
+    `;
+    return;
+  }
+
+  summary.innerHTML = `
+    <p class="answer-label">已整理回饋</p>
+    <h3>謝謝你的評分，這份內容可貼到官方 LINE</h3>
+    <pre class="feedback-output">${escapeHtml(message || buildFeedbackMessage())}</pre>
+    <button class="secondary-action full" id="copyFeedback" type="button">複製回饋卡</button>
+  `;
+
+  $("#copyFeedback")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(buildFeedbackMessage());
+      $("#copyFeedback").textContent = "已複製，可貼到官方 LINE";
+      showToast("回饋卡已複製，店長小江可從 LINE 收到內容。");
+    } catch {
+      $("#copyFeedback").textContent = "請手動複製上方內容";
+      showToast("手機若無法自動複製，請長按回饋卡內容後複製。");
+    }
+  });
+}
+
+function attachFeedbackFlow() {
+  renderFeedbackRatings();
+
+  $("#feedbackRatings")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-rating-key]");
+    if (!button) return;
+
+    state.feedback.ratings[button.dataset.ratingKey] = Number(button.dataset.ratingScore);
+    saveState();
+    renderFeedbackRatings();
+  });
+
+  $("#feedbackForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    state.feedback.favorite = $("#feedbackFavorite").value.trim();
+    state.feedback.suggestion = $("#feedbackSuggestion").value.trim();
+    state.feedback.note = $("#feedbackNote").value.trim();
+    state.feedback.submittedAt = new Date().toISOString();
+    saveState();
+
+    const message = buildFeedbackMessage();
+    updateFeedbackSummary(message);
+    $("#feedbackSummary").scrollIntoView({ behavior: "smooth", block: "start" });
+    showToast("已整理成回饋卡，可複製後貼到官方 LINE。");
+  });
+
+  $("#feedbackFavorite").value = state.feedback.favorite || "";
+  $("#feedbackSuggestion").value = state.feedback.suggestion || "";
+  $("#feedbackNote").value = state.feedback.note || "";
+  updateFeedbackSummary();
 }
 
 function registerServiceWorker() {
@@ -477,12 +661,13 @@ function init() {
   attachHandoffFlow();
   attachPreferenceFlow();
   attachMemberFlow();
-  attachStaffFlow();
+  attachFeedbackFlow();
   updateStoreHeader();
   updateMemberUI();
   updateSelectedChips("needChips", state.needs, "need");
   updateSelectedChips("preferenceChips", state.preferences, "pref");
   buildRecommendations();
+  activateScreen(getInitialScreenName(), { behavior: "auto", focus: false });
   registerServiceWorker();
 }
 

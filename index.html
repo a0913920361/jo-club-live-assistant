@@ -212,7 +212,7 @@
             </div>
             <label>
               會員暱稱
-              <input id="memberNickname" type="text" placeholder="例如：詳哥" autocomplete="nickname" />
+              <input id="memberNickname" type="text" placeholder="例如：小江" autocomplete="nickname" />
             </label>
             <button class="primary-action full" id="saveNickname" type="button">儲存暱稱</button>
             <p class="form-note">2026 年 6 月開幕期間，完成入會程序後當天消費 8 折；壽星提前告知可獲精美禮品。點數制度規劃中。</p>
@@ -237,30 +237,32 @@
           </article>
         </section>
 
-        <section class="screen" id="screen-staff" data-screen="staff">
+        <section class="screen" id="screen-feedback" data-screen="feedback">
           <div class="section-heading">
-            <p>內部入口</p>
-            <h2>店員後台簡化版</h2>
+            <p>功能 5</p>
+            <h2>客人回饋評分</h2>
           </div>
-          <form class="tool-panel staff-form" id="staffForm">
+          <form class="tool-panel feedback-form" id="feedbackForm">
+            <p class="form-note">歡迎留下這次到 JO CLUB 的感受，送出後會整理成一張回饋卡，可貼到官方 LINE 讓店長小江參考。</p>
+            <div class="rating-grid" id="feedbackRatings" aria-label="回饋評分項目"></div>
             <label>
-              今日店內狀態
-              <input id="staffStatus" type="text" value="14:00-24:00" />
+              最喜歡的地方
+              <textarea id="feedbackFavorite" rows="3" placeholder="例如：環境舒服、服務親切、餐點好吃、很適合朋友聚會。"></textarea>
             </label>
             <label>
-              推薦重點
-              <input id="staffFocus" type="text" value="咖啡・輕食・桌遊・聚會" />
+              建議改善
+              <textarea id="feedbackSuggestion" rows="3" placeholder="例如：希望座位更明亮、音量再調整、菜單說明更清楚。"></textarea>
             </label>
             <label>
-              今日主打
-              <textarea id="staffFeature" rows="3">今日主打 A 個人套餐 230 元、B 雙人套餐 430 元、4 人分享餐 800 元；官方 LINE 會員結帳 8 折。</textarea>
+              想讓店長小江知道
+              <textarea id="feedbackNote" rows="3" placeholder="其他想補充的稱讚、問題或下次希望安排的內容。"></textarea>
             </label>
-            <button class="primary-action full" type="submit">更新前台推薦資料</button>
+            <button class="primary-action full" type="submit">送出回饋</button>
           </form>
-          <article class="answer-card">
-            <p class="answer-label">原型邏輯</p>
-            <h3>店員可更新 AI 回答資料</h3>
-            <p>正式版可擴充為菜單、活動、優惠、座位、會員權益、LINE/IG 與常見問題管理。</p>
+          <article class="answer-card" id="feedbackSummary">
+            <p class="answer-label">回饋狀態</p>
+            <h3>還沒有送出回饋</h3>
+            <p>評分後會自動整理出重點，方便店長小江看見客人的實際感受與改善建議。</p>
           </article>
         </section>
       </main>
@@ -270,63 +272,11 @@
         <button type="button" data-tab-target="ask">提問</button>
         <button type="button" data-tab-target="today">推薦</button>
         <button type="button" data-tab-target="member">偏好</button>
-        <button type="button" data-tab-target="staff">店員</button>
+        <button type="button" data-tab-target="feedback">回饋</button>
       </footer>
     </div>
 
-    <script>
-      window.addEventListener("DOMContentLoaded", () => {
-        const getScreenTarget = (name) => {
-          const targets = {
-            photo: "#screen-photo .tool-panel",
-            ask: "#questionInput",
-            today: "#screen-today .tool-panel",
-            member: "#screen-member .tool-panel",
-            staff: "#screen-staff .tool-panel"
-          };
-          return document.querySelector(targets[name]) || document.querySelector(`#screen-${name}`);
-        };
-
-        const scrollToTarget = (name) => {
-          const target = getScreenTarget(name);
-          if (!target) return;
-
-          window.requestAnimationFrame(() => {
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
-
-            if (name === "ask") {
-              window.setTimeout(() => {
-                const input = document.querySelector("#questionInput");
-                try {
-                  input?.focus({ preventScroll: true });
-                } catch {
-                  input?.focus();
-                }
-              }, 350);
-            }
-          });
-        };
-
-        const showScreen = (name) => {
-          document.querySelectorAll("[data-screen]").forEach((screen) => {
-            screen.classList.toggle("is-active", screen.dataset.screen === name);
-          });
-          document.querySelectorAll("[data-tab-target]").forEach((button) => {
-            button.classList.toggle("is-active", button.dataset.tabTarget === name);
-          });
-          scrollToTarget(name);
-        };
-
-        document.addEventListener("click", (event) => {
-          const button = event.target.closest("[data-tab-target]");
-          if (!button) return;
-          event.preventDefault();
-          showScreen(button.dataset.tabTarget);
-        });
-
-        window.joClubShowScreen = showScreen;
-      });
-    </script>
-    <script src="./app.js?v=20260603-scrollfix-v1"></script>
+    <div class="app-toast" id="appToast" role="status" aria-live="polite" hidden></div>
+    <script src="./app.js?v=20260604-line-mobile-v1"></script>
   </body>
 </html>
