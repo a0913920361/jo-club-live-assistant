@@ -16,7 +16,9 @@ const defaultState = {
     interests: [],
     suggestion: "",
     note: "",
-    submittedAt: ""
+    submittedAt: "",
+    savedId: "",
+    savedAt: ""
   }
 };
 
@@ -611,11 +613,21 @@ function buildFeedbackMessage() {
   return lines.join("\n");
 }
 
-function updateFeedbackSummary(message = "") {
+function updateFeedbackSummary({ error = "" } = {}) {
   const summary = $("#feedbackSummary");
   if (!summary) return;
 
-  if (!state.feedback.submittedAt) {
+  if (error) {
+    summary.innerHTML = `
+      <p class="answer-label">送出狀態</p>
+      <h3>目前後台尚未完成儲存設定</h3>
+      <p>${escapeHtml(error)}</p>
+      <p>請店內先確認 Cloudflare 已設定 FEEDBACK_STORE，設定完成後客人的回饋就會直接進後台。</p>
+    `;
+    return;
+  }
+
+  if (!state.feedback.submittedAt || !state.feedback.savedId) {
     summary.innerHTML = `
       <p class="answer-label">回饋狀態</p>
       <h3>還沒有送出回饋</h3>
@@ -625,22 +637,11 @@ function updateFeedbackSummary(message = "") {
   }
 
   summary.innerHTML = `
-    <p class="answer-label">已整理回饋</p>
-    <h3>謝謝你的評分，這份內容可貼到官方 LINE</h3>
-    <pre class="feedback-output">${escapeHtml(message || buildFeedbackMessage())}</pre>
-    <button class="secondary-action full" id="copyFeedback" type="button">複製回饋卡</button>
+    <p class="answer-label">已送出回饋</p>
+    <h3>感謝您的寶貴意見</h3>
+    <p>您的回饋已送到 JO CLUB 後台，店長小江會作為現場服務與活動安排的參考。</p>
+    <p>送出時間：${escapeHtml(new Date(state.feedback.submittedAt).toLocaleString("zh-TW"))}</p>
   `;
-
-  $("#copyFeedback")?.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(buildFeedbackMessage());
-      $("#copyFeedback").textContent = "已複製，可貼到官方 LINE";
-      showToast("回饋卡已複製，店長小江可從 LINE 收到內容。");
-    } catch {
-      $("#copyFeedback").textContent = "請手動複製上方內容";
-      showToast("手機若無法自動複製，請長按回饋卡內容後複製。");
-    }
-  });
 }
 
 async function saveFeedbackToBackend(message) {
@@ -696,19 +697,35 @@ function attachFeedbackFlow() {
 
   $("#feedbackForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const submitButton = $("#feedbackForm .primary-action");
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = "送出中";
+
     state.feedback.suggestion = $("#feedbackSuggestion").value.trim();
     state.feedback.note = $("#feedbackNote").value.trim();
     state.feedback.submittedAt = new Date().toISOString();
     saveState();
 
     const message = buildFeedbackMessage();
-    updateFeedbackSummary(message);
-    $("#feedbackSummary").scrollIntoView({ behavior: "smooth", block: "start" });
     try {
-      await saveFeedbackToBackend(message);
-      showToast("回饋已送出並儲存到後台。");
-    } catch {
-      showToast("已整理成回饋卡；後台尚未完成儲存設定。");
+      const data = await saveFeedbackToBackend(message);
+      state.feedback.savedId = data.record?.id || "";
+      state.feedback.savedAt = data.record?.createdAt || state.feedback.submittedAt;
+      saveState();
+      updateFeedbackSummary();
+      showToast("感謝您的寶貴意見，回饋已送出。");
+    } catch (error) {
+      state.feedback.submittedAt = "";
+      state.feedback.savedId = "";
+      state.feedback.savedAt = "";
+      saveState();
+      updateFeedbackSummary({ error: error.message || "回饋後台暫時無法儲存。" });
+      showToast("後台尚未完成儲存設定，請稍後再試。");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = originalText;
+      $("#feedbackSummary").scrollIntoView({ behavior: "smooth", block: "start" });
     }
   });
 
