@@ -63,6 +63,36 @@ function getMemberNickname() {
   return state.nickname || getUrlNickname() || "會員";
 }
 
+function getScreenScrollTarget(name) {
+  const targets = {
+    photo: "#screen-photo .tool-panel",
+    ask: "#questionInput",
+    today: "#screen-today .tool-panel",
+    member: "#screen-member .tool-panel",
+    staff: "#screen-staff .tool-panel"
+  };
+  return $(targets[name]) || $(`#screen-${name}`);
+}
+
+function scrollToScreenTarget(name) {
+  const target = getScreenScrollTarget(name);
+  if (!target) return;
+
+  window.requestAnimationFrame(() => {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    if (name === "ask") {
+      window.setTimeout(() => {
+        try {
+          $("#questionInput")?.focus({ preventScroll: true });
+        } catch {
+          $("#questionInput")?.focus();
+        }
+      }, 350);
+    }
+  });
+}
+
 function activateScreen(name) {
   if (window.joClubShowScreen && activateScreen !== window.joClubShowScreen) {
     window.joClubShowScreen(name);
@@ -77,7 +107,7 @@ function activateScreen(name) {
     button.classList.toggle("is-active", button.dataset.tabTarget === name);
   });
 
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  scrollToScreenTarget(name);
 }
 
 function attachNavigation() {

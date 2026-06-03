@@ -453,10 +453,19 @@ h3 {
 
 .screen {
   display: none;
+  scroll-margin-top: 86px;
 }
 
 .screen.is-active {
   display: block;
+}
+
+#questionInput,
+#screen-photo .tool-panel,
+#screen-today .tool-panel,
+#screen-member .tool-panel,
+#screen-staff .tool-panel {
+  scroll-margin-top: 86px;
 }
 
 .section-heading {

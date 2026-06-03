@@ -276,6 +276,37 @@
 
     <script>
       window.addEventListener("DOMContentLoaded", () => {
+        const getScreenTarget = (name) => {
+          const targets = {
+            photo: "#screen-photo .tool-panel",
+            ask: "#questionInput",
+            today: "#screen-today .tool-panel",
+            member: "#screen-member .tool-panel",
+            staff: "#screen-staff .tool-panel"
+          };
+          return document.querySelector(targets[name]) || document.querySelector(`#screen-${name}`);
+        };
+
+        const scrollToTarget = (name) => {
+          const target = getScreenTarget(name);
+          if (!target) return;
+
+          window.requestAnimationFrame(() => {
+            target.scrollIntoView({ behavior: "smooth", block: "start" });
+
+            if (name === "ask") {
+              window.setTimeout(() => {
+                const input = document.querySelector("#questionInput");
+                try {
+                  input?.focus({ preventScroll: true });
+                } catch {
+                  input?.focus();
+                }
+              }, 350);
+            }
+          });
+        };
+
         const showScreen = (name) => {
           document.querySelectorAll("[data-screen]").forEach((screen) => {
             screen.classList.toggle("is-active", screen.dataset.screen === name);
@@ -283,7 +314,7 @@
           document.querySelectorAll("[data-tab-target]").forEach((button) => {
             button.classList.toggle("is-active", button.dataset.tabTarget === name);
           });
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          scrollToTarget(name);
         };
 
         document.addEventListener("click", (event) => {
@@ -296,6 +327,6 @@
         window.joClubShowScreen = showScreen;
       });
     </script>
-    <script src="./app.js?v=20260603-ai-v1"></script>
+    <script src="./app.js?v=20260603-scrollfix-v1"></script>
   </body>
 </html>
