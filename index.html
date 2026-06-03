@@ -45,8 +45,8 @@
             今日推薦
           </button>
           <button type="button" data-tab-target="member">
-            <span class="nav-icon card-icon" aria-hidden="true"></span>
-            我的偏好
+            <span class="nav-icon activity-icon" aria-hidden="true"></span>
+            揪活動
           </button>
         </nav>
 
@@ -78,9 +78,9 @@
             <span>包廂聚會、音樂娛樂、舒適環境</span>
           </article>
           <article class="media-card">
-            <img src="./assets/line-qr.png" alt="JO CLUB 官方 LINE QR Code" />
-            <strong>官方 LINE 入口</strong>
-            <span>已加入官方會員後，從 LINE 連結開啟助手</span>
+            <img src="./assets/activity-radar.svg" alt="JO CLUB 揪局雷達活動入口" />
+            <strong>揪局雷達</strong>
+            <span>揪麻將、德州、喝酒、玩牌，一鍵送出需求</span>
           </article>
         </section>
 
@@ -199,41 +199,60 @@
         <section class="screen" id="screen-member" data-screen="member">
           <div class="section-heading">
             <p>功能 4</p>
-            <h2>我的偏好與會員服務</h2>
+            <h2>我要揪活動</h2>
           </div>
           <div class="tool-panel member-form">
-            <div class="official-qr">
-              <img src="./assets/line-qr.png" alt="JO CLUB 官方 QR CODE" />
-              <div>
-                <p class="answer-label">官方 LINE 會員</p>
-                <h3>已從官方連結進入助手</h3>
-                <p>這個工具預設提供給已加入 JO CLUB 官方 LINE 的會員使用。會員資料與聯絡由官方 LINE 承接，助手只記錄偏好與需求。</p>
-              </div>
+            <div class="experience-card">
+              <p class="answer-label">JO CLUB 揪咖入口</p>
+              <h3>想找人打牌、喝酒、玩遊戲，先把需求丟給我們。</h3>
+              <p>不管是揪麻將、揪德州、揪朋友小酌、揪玩牌、桌遊、包廂聚會或臨時想放鬆，都可以先選需求。JO CLUB 會依現場狀況協助安排空間、時段與適合的玩法。</p>
             </div>
             <label>
               會員暱稱
               <input id="memberNickname" type="text" placeholder="例如：小江" autocomplete="nickname" />
             </label>
             <button class="primary-action full" id="saveNickname" type="button">儲存暱稱</button>
-            <p class="form-note">2026 年 6 月開幕期間，完成入會程序後當天消費 8 折；壽星提前告知可獲精美禮品。點數制度規劃中。</p>
+            <p class="form-note">已從官方 QR Code 加入會員後，可直接在這裡送出現場需求，讓店方更快知道你想揪什麼。</p>
           </div>
 
           <div class="tool-panel">
-            <p class="field-title">會員偏好</p>
+            <p class="field-title">想揪什麼活動</p>
             <div class="chip-row multi" id="preferenceChips">
-              <button type="button" class="chip" data-pref="喜歡咖啡">喜歡咖啡</button>
-              <button type="button" class="chip" data-pref="輕食炸物">輕食炸物</button>
-              <button type="button" class="chip" data-pref="安靜包廂">安靜包廂</button>
-              <button type="button" class="chip" data-pref="桌遊聚會">桌遊聚會</button>
-              <button type="button" class="chip" data-pref="K歌歡唱">K歌歡唱</button>
-              <button type="button" class="chip" data-pref="生日聚會">生日聚會</button>
+              <button type="button" class="chip" data-pref="揪麻將">揪麻將</button>
+              <button type="button" class="chip" data-pref="揪德州">揪德州</button>
+              <button type="button" class="chip" data-pref="揪喝酒">揪喝酒</button>
+              <button type="button" class="chip" data-pref="揪玩牌">揪玩牌</button>
+              <button type="button" class="chip" data-pref="揪桌遊">揪桌遊</button>
+              <button type="button" class="chip" data-pref="揪唱歌">揪唱歌</button>
+              <button type="button" class="chip" data-pref="包廂聚會">包廂聚會</button>
+              <button type="button" class="chip" data-pref="生日慶祝">生日慶祝</button>
+            </div>
+            <form class="activity-form" id="activityForm">
+              <label>
+                希望時間
+                <input id="activityTime" type="text" placeholder="例如：今晚 9 點、週五晚上" />
+              </label>
+              <label>
+                人數
+                <input id="activityPeople" type="text" placeholder="例如：3 人、6-8 人" />
+              </label>
+              <label>
+                補充需求
+                <textarea id="activityNote" rows="3" placeholder="例如：想找缺咖、需要安靜包廂、想邊喝酒邊玩牌"></textarea>
+              </label>
+              <button class="primary-action full" type="submit">通知店方協助安排</button>
+            </form>
+            <div class="task-output" id="activityOutput" hidden>
+              <p class="answer-label">可貼到官方 LINE</p>
+              <pre id="activityMessage"></pre>
+              <button class="secondary-action full" id="copyActivity" type="button">複製揪活動需求</button>
             </div>
           </div>
 
           <article class="answer-card" id="memberSummary">
-            <p class="answer-label">會員狀態</p>
-            <h3>官方 LINE 會員入口</h3>
-            <p>已由官方 LINE 連結進入，接下來可累積偏好，讓現場服務與推薦更準。</p>
+            <p class="answer-label">揪活動狀態</p>
+            <h3>先選想揪的活動</h3>
+            <p>選好活動、時間與人數後，JO CLUB 會更快知道你需要找咖、安排空間或協助控場。</p>
           </article>
         </section>
 
@@ -272,7 +291,7 @@
         <button class="is-active" type="button" data-tab-target="photo">拍照</button>
         <button type="button" data-tab-target="ask">提問</button>
         <button type="button" data-tab-target="today">推薦</button>
-        <button type="button" data-tab-target="member">偏好</button>
+        <button type="button" data-tab-target="member">揪活動</button>
         <button type="button" data-tab-target="feedback">回饋</button>
       </footer>
     </div>

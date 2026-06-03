@@ -1,0 +1,21 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="600" fill="#111111"/>
+  <rect x="42" y="42" width="716" height="516" rx="34" fill="#191715" stroke="#D9A94A" stroke-opacity=".28" stroke-width="2"/>
+  <circle cx="400" cy="292" r="196" fill="#D9A94A" fill-opacity=".05" stroke="#D9A94A" stroke-opacity=".2" stroke-width="2"/>
+  <circle cx="400" cy="292" r="132" stroke="#D9A94A" stroke-opacity=".28" stroke-width="2"/>
+  <circle cx="400" cy="292" r="68" stroke="#F7D88A" stroke-opacity=".45" stroke-width="2"/>
+  <path d="M400 292 530 196" stroke="#F7D88A" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="400" cy="292" r="16" fill="#F7D88A"/>
+  <circle cx="530" cy="196" r="24" fill="#8E2F3F" stroke="#F7D88A" stroke-width="5"/>
+  <path d="M250 236h92c13 0 24 11 24 24v72c0 13-11 24-24 24h-92c-13 0-24-11-24-24v-72c0-13 11-24 24-24Z" fill="#F5F1EA" fill-opacity=".1" stroke="#F7D88A" stroke-width="7"/>
+  <path d="M276 268c16-20 45-20 61 0" stroke="#F7D88A" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="292" cy="310" r="13" fill="#D9A94A"/>
+  <circle cx="330" cy="310" r="13" fill="#D9A94A"/>
+  <path d="M481 362h92c13 0 24 11 24 24v72c0 13-11 24-24 24h-92c-13 0-24-11-24-24v-72c0-13 11-24 24-24Z" fill="#F5F1EA" fill-opacity=".1" stroke="#F7D88A" stroke-width="7"/>
+  <path d="M504 394h46M504 423h66" stroke="#F7D88A" stroke-width="8" stroke-linecap="round"/>
+  <path d="M221 410c33-29 82-29 115 0M236 442c24-20 60-20 84 0" stroke="#5F8E70" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="278" cy="374" r="35" fill="#5F8E70"/>
+  <path d="M400 82l17 38 41 5-31 27 9 41-36-22-36 22 9-41-31-27 41-5 17-38Z" fill="#D9A94A"/>
+  <text x="400" y="512" text-anchor="middle" fill="#F5F1EA" font-family="Microsoft JhengHei, PingFang TC, Noto Sans TC, sans-serif" font-size="54" font-weight="800">揪局雷達</text>
+  <text x="400" y="552" text-anchor="middle" fill="#B8ADA1" font-family="Microsoft JhengHei, PingFang TC, Noto Sans TC, sans-serif" font-size="26" font-weight="700">找咖・牌局・小酌・聚會</text>
+</svg>

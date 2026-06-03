@@ -344,6 +344,36 @@ h3 {
   border-top: 2px solid currentColor;
 }
 
+.activity-icon::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 5px rgba(217, 169, 74, 0.18);
+}
+
+.activity-icon::after {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 3px;
+  width: 3px;
+  height: 18px;
+  border-radius: 999px;
+  background: currentColor;
+  transform: rotate(45deg);
+  transform-origin: 50% 90%;
+}
+
+.quick-grid button[data-tab-target="member"] {
+  background:
+    linear-gradient(135deg, rgba(217, 169, 74, 0.18), rgba(142, 47, 63, 0.18)),
+    var(--panel);
+  border-color: rgba(217, 169, 74, 0.34);
+  color: #ffe2a0;
+}
+
 .mic-icon::before {
   content: "";
   position: absolute;
@@ -699,6 +729,7 @@ select:focus {
 }
 
 .member-form label,
+.activity-form label,
 .feedback-form label {
   display: grid;
   gap: 6px;
@@ -822,6 +853,32 @@ select:focus {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.experience-card {
+  padding: 14px;
+  border: 1px solid rgba(217, 169, 74, 0.32);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(135deg, rgba(217, 169, 74, 0.12), rgba(142, 47, 63, 0.1)),
+    rgba(255, 255, 255, 0.04);
+}
+
+.experience-card h3 {
+  margin-bottom: 8px;
+  line-height: 1.35;
+}
+
+.experience-card p:last-child {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.activity-form {
+  display: grid;
+  gap: 12px;
 }
 
 @media (max-width: 360px) {

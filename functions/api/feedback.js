@@ -34,6 +34,77 @@ function cleanInterests(value) {
     : [];
 }
 
+function shouldNotifyStaff(record) {
+  return record.source === "activity-request" || /揪活動|需求|包廂|生日|麻將|德州|喝酒|玩牌/.test(record.message);
+}
+
+async function notifyStaff(record, env) {
+  if (!shouldNotifyStaff(record)) {
+    return { attempted: false, reason: "not_staff_request" };
+  }
+
+  if (env.LINE_CHANNEL_ACCESS_TOKEN && env.LINE_STAFF_TO) {
+    const text = [
+      "【JO CLUB 現場需求通知】",
+      record.message || `會員：${record.member}`,
+      "",
+      `送出時間：${new Date(record.createdAt).toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}`
+    ].join("\n").slice(0, 4500);
+
+    const response = await fetch("https://api.line.me/v2/bot/message/push", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        to: env.LINE_STAFF_TO,
+        messages: [
+          {
+            type: "text",
+            text
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      return {
+        attempted: true,
+        channel: "line",
+        ok: false,
+        status: response.status,
+        error: cleanText(await response.text(), 1000)
+      };
+    }
+
+    return { attempted: true, channel: "line", ok: true };
+  }
+
+  if (env.STAFF_WEBHOOK_URL) {
+    const response = await fetch(env.STAFF_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        text: record.message,
+        content: record.message,
+        record
+      })
+    });
+
+    return {
+      attempted: true,
+      channel: "webhook",
+      ok: response.ok,
+      status: response.status
+    };
+  }
+
+  return { attempted: false, reason: "missing_notification_env" };
+}
+
 export async function onRequestPost({ request, env }) {
   let body;
   try {
@@ -64,7 +135,19 @@ export async function onRequestPost({ request, env }) {
   }
 
   await env.FEEDBACK_STORE.put(`feedback:${record.createdAt}:${record.id}`, JSON.stringify(record));
-  return json({ ok: true, record });
+
+  let notification = { attempted: false };
+  try {
+    notification = await notifyStaff(record, env);
+  } catch (error) {
+    notification = {
+      attempted: true,
+      ok: false,
+      error: cleanText(error.message, 1000)
+    };
+  }
+
+  return json({ ok: true, record, notification });
 }
 
 export async function onRequestGet({ request, env }) {

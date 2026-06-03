@@ -1,4 +1,4 @@
-const CACHE_NAME = "jo-club-live-assistant-v2";
+const CACHE_NAME = "jo-club-live-assistant-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -9,6 +9,7 @@ const ASSETS = [
   "./assets/menu-light-meal-sets.jpg",
   "./assets/menu-coffee-dessert-drinks.jpg",
   "./assets/main-room.jpg",
+  "./assets/activity-radar.svg",
   "./assets/line-qr.png",
   "./assets/opening-poster.jpg",
   "./assets/outdoor-pillar-sign.jpg",

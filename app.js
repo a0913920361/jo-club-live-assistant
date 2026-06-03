@@ -203,12 +203,12 @@ function updateMemberUI() {
     nicknameInput.value = state.nickname || getUrlNickname();
   }
 
-  const prefs = state.preferences.length ? state.preferences.join("、") : "尚未選擇偏好";
+  const activities = state.preferences.length ? state.preferences.join("、") : "尚未選擇活動";
   $("#memberSummary").innerHTML = `
-    <p class="answer-label">會員狀態</p>
-    <h3>${escapeHtml(nickname)}，已由官方 LINE 會員入口進入</h3>
-    <p>這裡先記錄你的偏好，讓 JO 助手推薦聚會、餐點與活動時更貼近你。</p>
-    <p>目前偏好：${escapeHtml(prefs)}</p>
+    <p class="answer-label">揪活動狀態</p>
+    <h3>${escapeHtml(nickname)}，想揪的活動可以直接交給店方協助</h3>
+    <p>這裡不是會員介紹頁，而是現場需求入口。選好活動後，JO CLUB 可協助找咖、安排包廂、搭配酒水或規劃遊戲節奏。</p>
+    <p>目前想揪：${escapeHtml(activities)}</p>
   `;
 }
 
@@ -462,23 +462,23 @@ function buildRecommendations() {
 
   const cards = [
     {
-      title: has("咖啡") ? "咖啡與甜點組合" : "朋友聚會分享餐",
-      tag: has("咖啡") ? "輕鬆聊天" : "聚會",
-      body: has("咖啡")
-        ? "可從精品美式、精品拿鐵搭配巴斯克蛋糕或精選蛋糕開始，適合下午聊天。"
+      title: has("揪喝酒") ? "小酌開局組合" : "朋友聚會分享餐",
+      tag: has("揪喝酒") ? "喝酒聊天" : "聚會",
+      body: has("揪喝酒")
+        ? "可先用輕食炸物搭配飲品開局，適合朋友聊天、等咖到齊，再接玩牌或桌遊。"
         : "4 人分享餐 800 元適合先墊胃，再搭配飲料與桌遊，現場節奏會比較自然。"
     },
     {
-      title: has("安靜包廂") ? "安靜座位需求" : "桌遊與投影安排",
+      title: has("揪麻將") || has("揪德州") || has("揪玩牌") ? "找咖與牌局安排" : "桌遊與投影安排",
       tag: "現場服務",
-      body: has("安靜包廂")
-        ? "若需要比較安靜的空間，建議先在官方 LINE 留言，讓店長小江依當天人流安排。"
+      body: has("揪麻將") || has("揪德州") || has("揪玩牌")
+        ? "先送出想玩的項目、人數與時間，店方可依現場狀況協助確認缺咖、座位與包廂需求。"
         : "現場可配合桌遊、投影與聚會需求，多人活動建議提前 1 天告知。"
     },
     {
-      title: has("生日") ? "生日活動提醒" : "開幕會員優惠",
-      tag: has("生日") ? "壽星" : "會員",
-      body: has("生日")
+      title: has("生日") || has("包廂") ? "包廂與慶生活動" : "開幕會員優惠",
+      tag: has("生日") || has("包廂") ? "活動" : "會員",
+      body: has("生日") || has("包廂")
         ? "壽星消費若提前告知，店內會準備精美禮品。若要活動規劃，建議提前 2 天。"
         : "6 月開幕期間完成入會，當天消費 8 折，包含包場活動。"
     }
@@ -530,7 +530,87 @@ function attachMemberFlow() {
     state.nickname = $("#memberNickname").value.trim();
     saveState();
     updateMemberUI();
+    showToast("暱稱已更新。");
   });
+
+  $("#activityForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const activities = state.preferences;
+    if (!activities.length) {
+      showToast("請先選擇想揪的活動。");
+      return;
+    }
+
+    const message = buildActivityMessage();
+    $("#activityMessage").textContent = message;
+    $("#activityOutput").hidden = false;
+    $("#activityOutput").scrollIntoView({ behavior: "smooth", block: "start" });
+
+    const submitButton = $("#activityForm .primary-action");
+    const originalText = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = "已整理需求";
+
+    try {
+      await saveActivityToBackend(message);
+      showToast("揪活動需求已送出，也可複製貼回官方 LINE。");
+    } catch {
+      showToast("需求卡已產生，請複製後貼回官方 LINE。");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = originalText;
+    }
+  });
+
+  $("#copyActivity")?.addEventListener("click", async () => {
+    const text = $("#activityMessage").textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      $("#copyActivity").textContent = "已複製，可貼到官方 LINE";
+      showToast("揪活動需求已複製，回到 LINE 對話貼上即可。");
+    } catch {
+      $("#copyActivity").textContent = "請手動複製上方內容";
+      showToast("手機若無法自動複製，請長按需求卡內容後複製。");
+    }
+  });
+}
+
+function buildActivityMessage() {
+  return [
+    "JO CLUB 揪活動需求",
+    `會員：${getMemberNickname()}`,
+    "來源：官方 LINE JO 助手",
+    `想揪：${state.preferences.join("、") || "未選"}`,
+    `希望時間：${$("#activityTime").value.trim() || "未填"}`,
+    `人數：${$("#activityPeople").value.trim() || "未填"}`,
+    `補充需求：${$("#activityNote").value.trim() || "未填"}`,
+    "請店方協助確認現場狀況與安排。"
+  ].join("\n");
+}
+
+async function saveActivityToBackend(message) {
+  const response = await fetch("./api/feedback", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      member: getMemberNickname(),
+      ratings: {},
+      interests: state.preferences,
+      suggestion: $("#activityNote").value.trim(),
+      note: `希望時間：${$("#activityTime").value.trim() || "未填"}；人數：${$("#activityPeople").value.trim() || "未填"}`,
+      message,
+      submittedAt: new Date().toISOString(),
+      source: "activity-request"
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.ok) {
+    throw new Error(data.error || "揪活動需求尚未儲存。");
+  }
+  return data;
 }
 
 function ratingText(score) {

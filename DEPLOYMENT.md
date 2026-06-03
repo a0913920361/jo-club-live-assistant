@@ -62,6 +62,36 @@ https://jo-club-live-assistant.pages.dev/feedback-admin.html
 
 若有設定 `FEEDBACK_ADMIN_PIN`，進後台後輸入 PIN 再讀取紀錄。
 
+## 店內即時通知設定
+
+客人送出「揪活動」後，前端會呼叫：
+
+```text
+/api/feedback
+```
+
+如果要讓店內人員立刻收到 LINE 通知，建議使用 LINE Messaging API 推播到店內群組或指定店員帳號。
+
+Cloudflare Pages 需要新增環境變數：
+
+- `LINE_CHANNEL_ACCESS_TOKEN`：LINE Developers 後台 Messaging API channel access token。
+- `LINE_STAFF_TO`：接收通知的 `userId`、`groupId` 或 `roomId`。
+
+設定方式：
+
+1. 進入 LINE Developers，確認官方帳號已啟用 Messaging API。
+2. 取得 Channel access token。
+3. 如果要通知店內群組，把官方帳號邀請進店內 LINE 群組。
+4. 透過 webhook 事件取得該群組的 `groupId`。
+5. 進入 Cloudflare Pages 專案 `jo-club-live-assistant`。
+6. 進入 `Settings`。
+7. 新增環境變數 `LINE_CHANNEL_ACCESS_TOKEN` 與 `LINE_STAFF_TO`。
+8. 重新部署。
+
+若暫時不用 LINE，也可設定通用 webhook：
+
+- `STAFF_WEBHOOK_URL`：可接收 JSON POST 的通知網址，例如 Discord、Slack 或自建通知服務。
+
 ## LINE 圖文選單設定
 
 部署完成後，將 LINE 圖文選單 F 區改成：
