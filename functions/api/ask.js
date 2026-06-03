@@ -58,6 +58,16 @@ function json(data, status = 200) {
   });
 }
 
+export function onRequestGet({ env }) {
+  return json({
+    ok: true,
+    service: "JO CLUB assistant API",
+    hasOpenAiKey: Boolean(env.OPENAI_API_KEY),
+    model: env.OPENAI_MODEL || "gpt-4o-mini",
+    note: "Use POST /api/ask to ask JO CLUB assistant."
+  });
+}
+
 function buildPrompt({ question, mode, preferences, needs, photoKind }) {
   const preferenceText = preferences?.length ? preferences.join("、") : "尚未提供";
   const needText = needs?.length ? needs.join("、") : "尚未提供";
@@ -82,6 +92,42 @@ function pickOutputText(response) {
   const item = response.output?.find((entry) => entry.type === "message");
   const text = item?.content?.find((content) => content.type === "output_text");
   return text?.text || "";
+}
+
+async function callOpenAI({ env, inputContent, model }) {
+  const payload = {
+    model,
+    input: [
+      {
+        role: "user",
+        content: inputContent
+      }
+    ],
+    temperature: 0.4,
+    max_output_tokens: 500
+  };
+
+  const openaiResponse = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const result = await openaiResponse.json().catch(() => ({}));
+  if (!openaiResponse.ok) {
+    const message = result.error?.message || `OpenAI request failed with HTTP ${openaiResponse.status}.`;
+    const error = new Error(message);
+    error.status = openaiResponse.status;
+    error.code = result.error?.code || "";
+    error.type = result.error?.type || "";
+    error.model = model;
+    throw error;
+  }
+
+  return pickOutputText(result) || "";
 }
 
 export async function onRequestPost({ request, env }) {
@@ -121,41 +167,37 @@ export async function onRequestPost({ request, env }) {
     });
   }
 
-  const payload = {
-    model: env.OPENAI_MODEL || "gpt-4.1-mini",
-    input: [
-      {
-        role: "user",
-        content: inputContent
-      }
-    ],
-    temperature: 0.4,
-    max_output_tokens: 500
-  };
-
   try {
-    const openaiResponse = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
+    const preferredModel = env.OPENAI_MODEL || "gpt-4o-mini";
+    const fallbackModels = ["gpt-4o-mini", "gpt-4.1-mini", "gpt-4.1-nano"];
+    const models = [preferredModel, ...fallbackModels.filter((model) => model !== preferredModel)];
+    const failures = [];
 
-    const result = await openaiResponse.json();
-    if (!openaiResponse.ok) {
-      return json({
-        ok: false,
-        error: result.error?.message || "OpenAI request failed.",
-        answer: "JO 助手目前 AI 連線異常，請稍後再試，或直接在官方 LINE 留言讓店內接洽。"
-      }, 502);
+    for (const model of models) {
+      try {
+        const answer = await callOpenAI({ env, inputContent, model });
+        return json({
+          ok: true,
+          model,
+          answer: answer || "我目前沒有足夠資訊判斷，建議直接在官方 LINE 留言，讓詳哥或康哥協助確認。"
+        });
+      } catch (error) {
+        failures.push({
+          model,
+          status: error.status || 500,
+          code: error.code || "",
+          type: error.type || "",
+          message: error.message
+        });
+      }
     }
 
     return json({
-      ok: true,
-      answer: pickOutputText(result) || "我目前沒有足夠資訊判斷，建議直接在官方 LINE 留言，讓詳哥或康哥協助確認。"
-    });
+      ok: false,
+      error: failures[0]?.message || "OpenAI request failed.",
+      failures,
+      answer: "JO 助手目前 AI 連線異常，請稍後再試，或直接在官方 LINE 留言讓店內接洽。"
+    }, 502);
   } catch (error) {
     return json({
       ok: false,

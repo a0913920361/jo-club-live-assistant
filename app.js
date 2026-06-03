@@ -173,7 +173,10 @@ async function askAssistant({ question, mode = "文字提問", imageDataUrl = ""
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.ok) {
-    throw new Error(data.answer || data.error || "AI 連線失敗");
+    const detail = data.failures?.map((failure) => {
+      return `${failure.model}: ${failure.message}`;
+    }).join(" / ");
+    throw new Error(detail || data.error || data.answer || "AI 連線失敗");
   }
 
   return data.answer;
@@ -202,7 +205,7 @@ function attachAskFlow() {
       if (shouldHandoff(`${question} ${answer}`)) showHandoffCard(question);
     } catch (error) {
       const answer = fallbackAnswer(question);
-      $("#chatLog .bubble.assistant:last-child").textContent = `${answer}\n\n目前 AI 後端尚未完成設定或暫時連線失敗，這是備援回覆。`;
+      $("#chatLog .bubble.assistant:last-child").textContent = `${answer}\n\n目前 AI 尚未成功接上，這是備援回覆。\n偵錯訊息：${error.message}`;
       if (shouldHandoff(question)) showHandoffCard(question);
     } finally {
       button.disabled = false;
