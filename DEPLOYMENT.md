@@ -81,12 +81,29 @@ Cloudflare Pages 需要新增環境變數：
 
 1. 進入 LINE Developers，確認官方帳號已啟用 Messaging API。
 2. 取得 Channel access token。
-3. 如果要通知店內群組，把官方帳號邀請進店內 LINE 群組。
-4. 透過 webhook 事件取得該群組的 `groupId`。
-5. 進入 Cloudflare Pages 專案 `jo-club-live-assistant`。
-6. 進入 `Settings`。
-7. 新增環境變數 `LINE_CHANNEL_ACCESS_TOKEN` 與 `LINE_STAFF_TO`。
-8. 重新部署。
+3. 進入 Cloudflare Pages 專案 `jo-club-live-assistant`。
+4. 進入 `Settings`。
+5. 新增環境變數 `LINE_CHANNEL_ACCESS_TOKEN`，值貼上 Channel access token。
+6. 重新部署一次。
+7. 回到 LINE Developers 的 Messaging API 設定。
+8. 將 Webhook URL 設為：
+
+```text
+https://jo-club-live-assistant.pages.dev/api/line-webhook
+```
+
+9. 開啟 `Use webhook`。
+10. 如果要通知店內群組，開啟 `Allow bot to join group chats`。
+11. 把官方帳號邀請進店內 LINE 群組。
+12. 在該群組輸入：
+
+```text
+groupid
+```
+
+13. 官方帳號會回覆一行 `LINE_STAFF_TO=...`。
+14. 回到 Cloudflare Pages 新增環境變數 `LINE_STAFF_TO`，值貼上等號後面的 ID。
+15. 再重新部署一次。
 
 若暫時不用 LINE，也可設定通用 webhook：
 
