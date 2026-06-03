@@ -57,26 +57,26 @@ let selectedPhotoDataUrl = "";
 let toastTimer = 0;
 
 const feedbackItems = [
-  { key: "arrival", label: "走進店內第一印象" },
-  { key: "comfort", label: "環境舒適度" },
-  { key: "cleanliness", label: "整潔衛生" },
-  { key: "service", label: "人員服務態度" },
-  { key: "food", label: "餐點飲品滿意度" },
-  { key: "social", label: "聚會娛樂體驗" },
-  { key: "return", label: "再訪意願" }
+  { key: "arrival", label: "一進門的感覺" },
+  { key: "comfort", label: "坐下來有多 chill" },
+  { key: "cleanliness", label: "環境乾淨舒服" },
+  { key: "service", label: "店員互動感" },
+  { key: "food", label: "餐點飲品爽度" },
+  { key: "social", label: "好不好揪朋友來" },
+  { key: "return", label: "下次還想不想來" }
 ];
 
 const feedbackInterestOptions = [
-  "朋友聚會聊天",
-  "K 歌歡唱",
-  "桌遊輕娛樂",
-  "麻將休閒交流",
-  "德州競技交流",
-  "線上休閒遊戲體驗",
-  "包場慶生活動",
-  "咖啡甜點輕食",
-  "安靜包廂聊天",
-  "商務交流招待"
+  "德州新手局",
+  "麻將缺咖群",
+  "小酌調酒夜",
+  "深夜桌遊局",
+  "朋友包廂趴",
+  "生日驚喜局",
+  "K 歌歡唱局",
+  "下班放空場",
+  "交朋友社交夜",
+  "限定主題活動"
 ];
 
 function $(selector) {
@@ -674,11 +674,11 @@ function renderFeedbackInterests() {
 
 function buildFeedbackMessage() {
   const lines = [
-    "JO CLUB 客人回饋卡",
+    "JO CLUB 客人許願卡",
     `會員：${getMemberNickname()}`,
     "給：店長小江",
     "來源：官方 LINE JO 助手",
-    "評分："
+    "體驗感："
   ];
 
   feedbackItems.forEach((item) => {
@@ -686,9 +686,9 @@ function buildFeedbackMessage() {
     lines.push(`- ${item.label}：${score || "未評"} 分（${ratingText(score)}）`);
   });
 
-  lines.push(`休閒娛樂興趣：${state.feedback.interests?.length ? state.feedback.interests.join("、") : "未選擇"}`);
-  lines.push(`建議改善：${state.feedback.suggestion || "未填"}`);
-  lines.push(`想補充給小江：${state.feedback.note || "未填"}`);
+  lines.push(`想許願的內容：${state.feedback.interests?.length ? state.feedback.interests.join("、") : "未選擇"}`);
+  lines.push(`願望清單：${state.feedback.suggestion || "未填"}`);
+  lines.push(`偷偷跟店長說：${state.feedback.note || "未填"}`);
 
   return lines.join("\n");
 }
@@ -702,24 +702,24 @@ function updateFeedbackSummary({ error = "" } = {}) {
       <p class="answer-label">送出狀態</p>
       <h3>目前後台尚未完成儲存設定</h3>
       <p>${escapeHtml(error)}</p>
-      <p>請店內先確認 Cloudflare 已設定 FEEDBACK_STORE，設定完成後客人的回饋就會直接進後台。</p>
+      <p>請店內先確認 Cloudflare 已設定 FEEDBACK_STORE，設定完成後客人的許願就會直接進後台。</p>
     `;
     return;
   }
 
   if (!state.feedback.submittedAt || !state.feedback.savedId) {
     summary.innerHTML = `
-      <p class="answer-label">回饋狀態</p>
-      <h3>還沒有送出回饋</h3>
-      <p>評分後會自動整理出重點，方便店長小江看見客人的實際感受與改善建議。</p>
+      <p class="answer-label">許願狀態</p>
+      <h3>還沒丟願望</h3>
+      <p>選幾個想玩的方向，再寫一句你想要的玩法，讓 JO CLUB 幫你把聚會變得更有梗。</p>
     `;
     return;
   }
 
   summary.innerHTML = `
-    <p class="answer-label">已送出回饋</p>
-    <h3>感謝您的寶貴意見</h3>
-    <p>您的回饋已送到 JO CLUB 後台，店長小江會作為現場服務與活動安排的參考。</p>
+    <p class="answer-label">已送出許願</p>
+    <h3>願望收到，JO CLUB 會偷看</h3>
+    <p>你的許願已送到後台，店長小江會拿來安排下一波店內玩法、活動與現場體驗。</p>
     <p>送出時間：${escapeHtml(new Date(state.feedback.submittedAt).toLocaleString("zh-TW"))}</p>
   `;
 }
@@ -794,13 +794,13 @@ function attachFeedbackFlow() {
       state.feedback.savedAt = data.record?.createdAt || state.feedback.submittedAt;
       saveState();
       updateFeedbackSummary();
-      showToast("感謝您的寶貴意見，回饋已送出。");
+      showToast("願望已送出，搞不好下一場活動就是你許的。");
     } catch (error) {
       state.feedback.submittedAt = "";
       state.feedback.savedId = "";
       state.feedback.savedAt = "";
       saveState();
-      updateFeedbackSummary({ error: error.message || "回饋後台暫時無法儲存。" });
+      updateFeedbackSummary({ error: error.message || "許願後台暫時無法儲存。" });
       showToast("後台尚未完成儲存設定，請稍後再試。");
     } finally {
       submitButton.disabled = false;
