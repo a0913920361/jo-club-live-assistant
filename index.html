@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#111111" />
+    <title>JO CLUB 即時輔助工具原型</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">JO CLUB 場域綁定</p>
+          <h1>即時輔助工具</h1>
+        </div>
+        <button class="icon-button" id="memberToggle" type="button" aria-label="會員狀態">
+          <span class="member-dot" aria-hidden="true"></span>
+          <span id="memberShort">會員</span>
+        </button>
+      </header>
+
+      <main>
+        <section class="hero-panel" aria-label="JO CLUB 入口">
+          <img class="hero-image" src="./assets/storefront-night.jpg" alt="JO SOCIAL CLUB 夜間店面外觀" />
+          <div class="hero-copy">
+            <p>掃碼進店後開啟</p>
+            <h2>放鬆、聚會、娛樂，一進店就有 JO CLUB 即時助理。</h2>
+            <button class="primary-action" type="button" data-tab-target="ask">開始問 JO CLUB</button>
+          </div>
+        </section>
+
+        <nav class="quick-grid" aria-label="主要功能">
+          <button type="button" data-tab-target="photo">
+            <span class="nav-icon camera-icon" aria-hidden="true"></span>
+            拍照問
+          </button>
+          <button type="button" data-tab-target="ask">
+            <span class="nav-icon chat-icon" aria-hidden="true"></span>
+            直接問
+          </button>
+          <button type="button" data-tab-target="today">
+            <span class="nav-icon spark-icon" aria-hidden="true"></span>
+            今日推薦
+          </button>
+          <button type="button" data-tab-target="member">
+            <span class="nav-icon card-icon" aria-hidden="true"></span>
+            我的偏好
+          </button>
+        </nav>
+
+        <section class="status-strip" aria-label="現場狀態">
+          <div>
+            <span>營業時間</span>
+            <strong id="storeStatus">14:00-24:00</strong>
+          </div>
+          <div>
+            <span>推薦重點</span>
+            <strong id="storeFocus">咖啡・輕食・桌遊・聚會</strong>
+          </div>
+        </section>
+
+        <section class="asset-showcase" aria-label="JO CLUB 素材預覽">
+          <article class="media-card">
+            <img src="./assets/menu-light-meal-sets.jpg" alt="JO SOCIAL CLUB 義大利麵與套餐菜單" />
+            <strong>菜單</strong>
+            <span>義大利麵、炸物、水餃、套餐</span>
+          </article>
+          <article class="media-card">
+            <img src="./assets/menu-coffee-dessert-drinks.jpg" alt="JO SOCIAL CLUB 咖啡甜點飲料菜單" />
+            <strong>飲品甜點</strong>
+            <span>咖啡、飲料、甜點、厚片</span>
+          </article>
+          <article class="media-card">
+            <img src="./assets/main-room.jpg" alt="JO SOCIAL CLUB 店內主空間" />
+            <strong>店內空間</strong>
+            <span>包廂聚會、音樂娛樂、舒適環境</span>
+          </article>
+          <article class="media-card">
+            <img src="./assets/line-qr.png" alt="JO CLUB 官方 LINE QR Code" />
+            <strong>官方 LINE 入口</strong>
+            <span>已加入官方會員後，從 LINE 連結開啟助手</span>
+          </article>
+        </section>
+
+        <section class="screen is-active" id="screen-photo" data-screen="photo">
+          <div class="section-heading">
+            <p>功能 1</p>
+            <h2>拍照問 JO CLUB</h2>
+          </div>
+          <div class="tool-panel">
+            <label class="upload-zone" for="photoInput">
+              <input id="photoInput" type="file" accept="image/*" capture="environment" />
+              <span class="upload-mark camera-icon" aria-hidden="true"></span>
+              <strong>拍菜單、海報、招牌、店內資訊或 QR Code</strong>
+              <small>原型會用示範辨識流程回覆，正式版可接影像理解模型。</small>
+            </label>
+            <div class="preview-box" id="photoPreview" hidden></div>
+            <div class="chip-row" role="group" aria-label="照片類型">
+              <button type="button" class="chip is-selected" data-photo-kind="菜單">菜單</button>
+              <button type="button" class="chip" data-photo-kind="開幕海報">開幕海報</button>
+              <button type="button" class="chip" data-photo-kind="店內空間">店內空間</button>
+              <button type="button" class="chip" data-photo-kind="外觀招牌">外觀招牌</button>
+              <button type="button" class="chip" data-photo-kind="LINE/IG">LINE/IG</button>
+            </div>
+            <button class="primary-action full" id="analyzePhoto" type="button">理解並推薦</button>
+          </div>
+          <article class="answer-card" id="photoAnswer">
+            <p class="answer-label">JO CLUB 建議</p>
+            <h3>先拍一張現場資訊</h3>
+            <p>例如菜單、開幕海報、店內空間或 LINE QR Code，系統會協助客人看懂內容並轉成點餐、聚會或會員建議。</p>
+          </article>
+        </section>
+
+        <section class="screen" id="screen-ask" data-screen="ask">
+          <div class="section-heading">
+            <p>功能 2</p>
+            <h2>直接問 JO CLUB</h2>
+          </div>
+          <div class="tool-panel">
+            <textarea id="questionInput" rows="4" placeholder="例如：四個人想聚會聊天，要點什麼比較適合？"></textarea>
+            <div class="ask-actions">
+              <button class="secondary-action" id="voiceDemo" type="button">
+                <span class="nav-icon mic-icon" aria-hidden="true"></span>
+                語音示範
+              </button>
+              <button class="primary-action" id="sendQuestion" type="button">送出問題</button>
+            </div>
+            <div class="prompt-row">
+              <button type="button" data-prompt="四個人想聚會聊天，推薦怎麼點？">四人聚會</button>
+              <button type="button" data-prompt="想找安靜一點的位置或包廂。">包廂安排</button>
+              <button type="button" data-prompt="有什麼咖啡、甜點或輕食推薦？">餐點飲品</button>
+              <button type="button" data-prompt="我想辦生日活動，需要店內協助規劃。">慶生活動</button>
+            </div>
+          </div>
+          <article class="conversation" id="chatLog" aria-live="polite">
+            <div class="bubble assistant">可以直接問我菜單、飲品、輕食、桌遊、包廂聚會、會員權益或 LINE 加入方式。</div>
+          </article>
+          <article class="handoff-card" id="handoffCard" hidden>
+            <div>
+              <p class="answer-label">轉專員接洽</p>
+              <h3>我先幫你整理需求卡</h3>
+              <p>活動、慶生、包場、特殊規劃或私人安排，建議由店內專員確認，這樣比較能配合時間、人數和現場節奏。</p>
+            </div>
+            <form id="handoffForm">
+              <label>
+                需求類型
+                <select id="handoffType">
+                  <option>慶生活動</option>
+                  <option>包場活動</option>
+                  <option>團康/社團活動</option>
+                  <option>座位與包廂安排</option>
+                  <option>熟客私人安排</option>
+                  <option>其他特殊需求</option>
+                </select>
+              </label>
+              <label>
+                日期與時間
+                <input id="handoffTime" type="text" placeholder="例如：6/20 晚上 8 點" />
+              </label>
+              <label>
+                人數
+                <input id="handoffPeople" type="text" placeholder="例如：8 人" />
+              </label>
+              <label>
+                需求說明
+                <textarea id="handoffDetail" rows="3" placeholder="例如：想慶生、需要投影、希望有桌遊和簡單餐點。"></textarea>
+              </label>
+              <button class="primary-action full" type="submit">產生 LINE 留言內容</button>
+            </form>
+            <div class="task-output" id="taskOutput" hidden>
+              <p class="answer-label">可貼到官方 LINE</p>
+              <pre id="taskMessage"></pre>
+              <button class="secondary-action full" id="copyTask" type="button">複製需求卡</button>
+            </div>
+          </article>
+        </section>
+
+        <section class="screen" id="screen-today" data-screen="today">
+          <div class="section-heading">
+            <p>功能 3</p>
+            <h2>今日推薦</h2>
+          </div>
+          <div class="tool-panel">
+            <p class="field-title">選擇今晚需求</p>
+            <div class="chip-row multi" id="needChips">
+              <button type="button" class="chip" data-need="咖啡">咖啡</button>
+              <button type="button" class="chip" data-need="輕食">輕食</button>
+              <button type="button" class="chip" data-need="桌遊">桌遊</button>
+              <button type="button" class="chip" data-need="K歌歡唱">K歌歡唱</button>
+              <button type="button" class="chip" data-need="安靜包廂">安靜包廂</button>
+              <button type="button" class="chip" data-need="生日聚會">生日聚會</button>
+            </div>
+          </div>
+          <div class="recommend-list" id="recommendList"></div>
+        </section>
+
+        <section class="screen" id="screen-member" data-screen="member">
+          <div class="section-heading">
+            <p>功能 4</p>
+            <h2>我的偏好與會員服務</h2>
+          </div>
+          <div class="tool-panel member-form">
+            <div class="official-qr">
+              <img src="./assets/line-qr.png" alt="JO CLUB 官方 QR CODE" />
+              <div>
+                <p class="answer-label">官方 LINE 會員</p>
+                <h3>已從官方連結進入助手</h3>
+                <p>這個工具預設提供給已加入 JO CLUB 官方 LINE 的會員使用。會員資料與聯絡由官方 LINE 承接，助手只記錄偏好與需求。</p>
+              </div>
+            </div>
+            <label>
+              會員暱稱
+              <input id="memberNickname" type="text" placeholder="例如：詳哥" autocomplete="nickname" />
+            </label>
+            <button class="primary-action full" id="saveNickname" type="button">儲存暱稱</button>
+            <p class="form-note">2026 年 6 月開幕期間，完成入會程序後當天消費 8 折；壽星提前告知可獲精美禮品。點數制度規劃中。</p>
+          </div>
+
+          <div class="tool-panel">
+            <p class="field-title">會員偏好</p>
+            <div class="chip-row multi" id="preferenceChips">
+              <button type="button" class="chip" data-pref="喜歡咖啡">喜歡咖啡</button>
+              <button type="button" class="chip" data-pref="輕食炸物">輕食炸物</button>
+              <button type="button" class="chip" data-pref="安靜包廂">安靜包廂</button>
+              <button type="button" class="chip" data-pref="桌遊聚會">桌遊聚會</button>
+              <button type="button" class="chip" data-pref="K歌歡唱">K歌歡唱</button>
+              <button type="button" class="chip" data-pref="生日聚會">生日聚會</button>
+            </div>
+          </div>
+
+          <article class="answer-card" id="memberSummary">
+            <p class="answer-label">會員狀態</p>
+            <h3>官方 LINE 會員入口</h3>
+            <p>已由官方 LINE 連結進入，接下來可累積偏好，讓現場服務與推薦更準。</p>
+          </article>
+        </section>
+
+        <section class="screen" id="screen-staff" data-screen="staff">
+          <div class="section-heading">
+            <p>內部入口</p>
+            <h2>店員後台簡化版</h2>
+          </div>
+          <form class="tool-panel staff-form" id="staffForm">
+            <label>
+              今日店內狀態
+              <input id="staffStatus" type="text" value="14:00-24:00" />
+            </label>
+            <label>
+              推薦重點
+              <input id="staffFocus" type="text" value="咖啡・輕食・桌遊・聚會" />
+            </label>
+            <label>
+              今日主打
+              <textarea id="staffFeature" rows="3">今日主打 A 個人套餐 230 元、B 雙人套餐 430 元、4 人分享餐 800 元；官方 LINE 會員結帳 8 折。</textarea>
+            </label>
+            <button class="primary-action full" type="submit">更新前台推薦資料</button>
+          </form>
+          <article class="answer-card">
+            <p class="answer-label">原型邏輯</p>
+            <h3>店員可更新 AI 回答資料</h3>
+            <p>正式版可擴充為菜單、活動、優惠、座位、會員權益、LINE/IG 與常見問題管理。</p>
+          </article>
+        </section>
+      </main>
+
+      <footer class="bottom-tabs" aria-label="底部導覽">
+        <button class="is-active" type="button" data-tab-target="photo">拍照</button>
+        <button type="button" data-tab-target="ask">提問</button>
+        <button type="button" data-tab-target="today">推薦</button>
+        <button type="button" data-tab-target="member">偏好</button>
+        <button type="button" data-tab-target="staff">店員</button>
+      </footer>
+    </div>
+
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        const showScreen = (name) => {
+          document.querySelectorAll("[data-screen]").forEach((screen) => {
+            screen.classList.toggle("is-active", screen.dataset.screen === name);
+          });
+          document.querySelectorAll("[data-tab-target]").forEach((button) => {
+            button.classList.toggle("is-active", button.dataset.tabTarget === name);
+          });
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        };
+
+        document.addEventListener("click", (event) => {
+          const button = event.target.closest("[data-tab-target]");
+          if (!button) return;
+          event.preventDefault();
+          showScreen(button.dataset.tabTarget);
+        });
+
+        window.joClubShowScreen = showScreen;
+      });
+    </script>
+    <script src="./app.js?v=20260602-4"></script>
+  </body>
+</html>

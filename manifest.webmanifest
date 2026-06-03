@@ -1,0 +1,10 @@
+{
+  "name": "JO CLUB 即時輔助工具",
+  "short_name": "JO CLUB",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "description": "JO CLUB 場域綁定的智慧會員助理原型",
+  "icons": []
+}
