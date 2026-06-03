@@ -30,6 +30,38 @@
 8. Build output directory 填 `/`。
 9. 部署完成後，Cloudflare 會產生 HTTPS 網址。
 
+## 回饋後台儲存設定
+
+客人送出「回饋」後，前端會呼叫：
+
+```text
+/api/feedback
+```
+
+正式要集中保存到後台，需要在 Cloudflare 設定 KV：
+
+1. 進入 Cloudflare Dashboard。
+2. 進入 `Workers & Pages`。
+3. 建立一個 KV namespace，例如 `JO_CLUB_FEEDBACK`。
+4. 回到 Pages 專案 `jo-club-live-assistant`。
+5. 進入 `Settings`。
+6. 找到 `Functions` 或 `Bindings`。
+7. 新增 KV binding：
+   - Variable name：`FEEDBACK_STORE`
+   - KV namespace：選 `JO_CLUB_FEEDBACK`
+8. 建議再新增環境變數：
+   - Variable name：`FEEDBACK_ADMIN_PIN`
+   - Value：自訂一組後台 PIN
+9. 儲存後重新部署一次。
+
+後台查看網址：
+
+```text
+https://jo-club-live-assistant.pages.dev/feedback-admin.html
+```
+
+若有設定 `FEEDBACK_ADMIN_PIN`，進後台後輸入 PIN 再讀取紀錄。
+
 ## LINE 圖文選單設定
 
 部署完成後，將 LINE 圖文選單 F 區改成：

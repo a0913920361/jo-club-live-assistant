@@ -758,6 +758,29 @@ select:focus {
   color: var(--ink);
 }
 
+.interest-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.interest-chip {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.interest-chip.is-selected {
+  border-color: rgba(217, 169, 74, 0.72);
+  background: rgba(217, 169, 74, 0.18);
+  color: #ffe2a0;
+}
+
 .feedback-output {
   overflow: auto;
   white-space: pre-wrap;

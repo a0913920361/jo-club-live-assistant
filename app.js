@@ -13,7 +13,7 @@ const defaultState = {
   },
   feedback: {
     ratings: {},
-    favorite: "",
+    interests: [],
     suggestion: "",
     note: "",
     submittedAt: ""
@@ -62,6 +62,19 @@ const feedbackItems = [
   { key: "food", label: "餐點飲品滿意度" },
   { key: "social", label: "聚會娛樂體驗" },
   { key: "return", label: "再訪意願" }
+];
+
+const feedbackInterestOptions = [
+  "朋友聚會聊天",
+  "K 歌歡唱",
+  "桌遊輕娛樂",
+  "麻將休閒交流",
+  "德州競技交流",
+  "線上休閒遊戲體驗",
+  "包場慶生活動",
+  "咖啡甜點輕食",
+  "安靜包廂聊天",
+  "商務交流招待"
 ];
 
 function $(selector) {
@@ -561,6 +574,22 @@ function renderFeedbackRatings() {
     .join("");
 }
 
+function renderFeedbackInterests() {
+  const container = $("#feedbackInterests");
+  if (!container) return;
+
+  const selected = state.feedback.interests || [];
+  container.innerHTML = feedbackInterestOptions
+    .map((label) => `
+      <button
+        class="interest-chip ${selected.includes(label) ? "is-selected" : ""}"
+        type="button"
+        data-interest="${escapeHtml(label)}"
+      >${escapeHtml(label)}</button>
+    `)
+    .join("");
+}
+
 function buildFeedbackMessage() {
   const lines = [
     "JO CLUB 客人回饋卡",
@@ -575,7 +604,7 @@ function buildFeedbackMessage() {
     lines.push(`- ${item.label}：${score || "未評"} 分（${ratingText(score)}）`);
   });
 
-  lines.push(`最喜歡的地方：${state.feedback.favorite || "未填"}`);
+  lines.push(`休閒娛樂興趣：${state.feedback.interests?.length ? state.feedback.interests.join("、") : "未選擇"}`);
   lines.push(`建議改善：${state.feedback.suggestion || "未填"}`);
   lines.push(`想補充給小江：${state.feedback.note || "未填"}`);
 
@@ -614,8 +643,34 @@ function updateFeedbackSummary(message = "") {
   });
 }
 
+async function saveFeedbackToBackend(message) {
+  const response = await fetch("./api/feedback", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      member: getMemberNickname(),
+      ratings: state.feedback.ratings,
+      interests: state.feedback.interests || [],
+      suggestion: state.feedback.suggestion,
+      note: state.feedback.note,
+      message,
+      submittedAt: state.feedback.submittedAt,
+      source: "official-line-assistant"
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.ok) {
+    throw new Error(data.error || "回饋後台暫時無法儲存");
+  }
+  return data;
+}
+
 function attachFeedbackFlow() {
   renderFeedbackRatings();
+  renderFeedbackInterests();
 
   $("#feedbackRatings")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-rating-key]");
@@ -626,9 +681,21 @@ function attachFeedbackFlow() {
     renderFeedbackRatings();
   });
 
-  $("#feedbackForm")?.addEventListener("submit", (event) => {
+  $("#feedbackInterests")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-interest]");
+    if (!button) return;
+
+    const value = button.dataset.interest;
+    const selected = state.feedback.interests || [];
+    state.feedback.interests = selected.includes(value)
+      ? selected.filter((item) => item !== value)
+      : [...selected, value];
+    saveState();
+    renderFeedbackInterests();
+  });
+
+  $("#feedbackForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();
-    state.feedback.favorite = $("#feedbackFavorite").value.trim();
     state.feedback.suggestion = $("#feedbackSuggestion").value.trim();
     state.feedback.note = $("#feedbackNote").value.trim();
     state.feedback.submittedAt = new Date().toISOString();
@@ -637,10 +704,14 @@ function attachFeedbackFlow() {
     const message = buildFeedbackMessage();
     updateFeedbackSummary(message);
     $("#feedbackSummary").scrollIntoView({ behavior: "smooth", block: "start" });
-    showToast("已整理成回饋卡，可複製後貼到官方 LINE。");
+    try {
+      await saveFeedbackToBackend(message);
+      showToast("回饋已送出並儲存到後台。");
+    } catch {
+      showToast("已整理成回饋卡；後台尚未完成儲存設定。");
+    }
   });
 
-  $("#feedbackFavorite").value = state.feedback.favorite || "";
   $("#feedbackSuggestion").value = state.feedback.suggestion || "";
   $("#feedbackNote").value = state.feedback.note || "";
   updateFeedbackSummary();

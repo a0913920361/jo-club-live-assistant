@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#111111" />
+    <title>JO CLUB 回饋後台</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">JO CLUB 後台</p>
+          <h1>客人回饋紀錄</h1>
+        </div>
+      </header>
+
+      <main>
+        <section class="tool-panel">
+          <label>
+            管理 PIN
+            <input id="adminPin" type="password" placeholder="若 Cloudflare 有設定 FEEDBACK_ADMIN_PIN，請輸入 PIN" />
+          </label>
+          <button class="primary-action full" id="loadFeedback" type="button">讀取回饋紀錄</button>
+          <p class="form-note" id="adminStatus">送出回饋後，紀錄會顯示在這裡。正式保存需要 Cloudflare KV 綁定 FEEDBACK_STORE。</p>
+        </section>
+
+        <section class="recommend-list" id="feedbackRecords"></section>
+      </main>
+    </div>
+
+    <script>
+      const recordsBox = document.querySelector("#feedbackRecords");
+      const statusBox = document.querySelector("#adminStatus");
+      const pinInput = document.querySelector("#adminPin");
+
+      function escapeHtml(value) {
+        return String(value || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function ratingSummary(record) {
+        const ratings = record.ratings || {};
+        const values = Object.values(ratings).map(Number).filter(Boolean);
+        if (!values.length) return "未評分";
+        const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+        return `${average.toFixed(1)} / 5`;
+      }
+
+      function renderRecords(records) {
+        if (!records.length) {
+          recordsBox.innerHTML = '<article class="answer-card"><h3>目前沒有回饋紀錄</h3><p>客人送出後會出現在這裡。</p></article>';
+          return;
+        }
+
+        recordsBox.innerHTML = records.map((record) => `
+          <article class="recommend-card">
+            <header>
+              <strong>${escapeHtml(record.member || "會員")}</strong>
+              <span>${escapeHtml(ratingSummary(record))}</span>
+            </header>
+            <p class="answer-label">${escapeHtml(new Date(record.createdAt).toLocaleString("zh-TW"))}</p>
+            <p>興趣：${escapeHtml((record.interests || []).join("、") || "未選擇")}</p>
+            <p>建議改善：${escapeHtml(record.suggestion || "未填")}</p>
+            <p>補充給小江：${escapeHtml(record.note || "未填")}</p>
+            <pre class="feedback-output">${escapeHtml(record.message || "")}</pre>
+          </article>
+        `).join("");
+      }
+
+      async function loadFeedback() {
+        const pin = pinInput.value.trim();
+        const url = pin ? `./api/feedback?pin=${encodeURIComponent(pin)}` : "./api/feedback";
+        statusBox.textContent = "讀取中...";
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          if (!response.ok || !data.ok) throw new Error(data.error || "讀取失敗");
+          renderRecords(data.records || []);
+          statusBox.textContent = `已讀取 ${data.records.length} 筆回饋。`;
+        } catch (error) {
+          recordsBox.innerHTML = "";
+          statusBox.textContent = `${error.message} 請確認 Cloudflare 已設定 FEEDBACK_STORE，若有設定 FEEDBACK_ADMIN_PIN 也要輸入正確 PIN。`;
+        }
+      }
+
+      document.querySelector("#loadFeedback").addEventListener("click", loadFeedback);
+      loadFeedback();
+    </script>
+  </body>
+</html>
