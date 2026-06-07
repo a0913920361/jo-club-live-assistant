@@ -689,8 +689,6 @@ async function submitActivityContactForm(event) {
   }
 
   const finalMessage = buildActivityMessageWithContact(contact);
-  $("#activityMessage").textContent = finalMessage;
-  $("#activityOutput").hidden = false;
 
   const submitButton = $("#confirmActivityContact");
   const originalText = submitButton.textContent;
@@ -699,6 +697,8 @@ async function submitActivityContactForm(event) {
 
   try {
     const data = await saveActivityToBackend(finalMessage);
+    $("#activityMessage").textContent = finalMessage;
+    $("#activityOutput").hidden = false;
     $("#activityContactForm").hidden = true;
     $("#activitySuccessPanel").hidden = false;
     $("#activityOutput").scrollIntoView({ behavior: "smooth", block: "start" });
