@@ -912,6 +912,10 @@ select:focus {
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
 }
 
+.modal-panel[hidden] {
+  display: none !important;
+}
+
 .modal-panel h3 {
   font-size: 22px;
   line-height: 1.3;

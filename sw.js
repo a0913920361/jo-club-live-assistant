@@ -1,4 +1,4 @@
-const CACHE_NAME = "jo-club-live-assistant-v5";
+const CACHE_NAME = "jo-club-live-assistant-v6";
 const ASSETS = [
   "./",
   "./index.html",
