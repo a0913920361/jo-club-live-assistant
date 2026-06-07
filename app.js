@@ -55,6 +55,7 @@ const focusTargets = {
 let state = loadState();
 let selectedPhotoDataUrl = "";
 let toastTimer = 0;
+let pendingActivityDraft = null;
 
 const feedbackItems = [
   { key: "arrival", label: "一進門的感覺" },
@@ -107,7 +108,13 @@ function saveState() {
 
 function getUrlNickname() {
   const params = new URLSearchParams(window.location.search);
-  return (params.get("name") || params.get("nickname") || "").trim();
+  return (
+    params.get("name") ||
+    params.get("nickname") ||
+    params.get("memberName") ||
+    params.get("displayName") ||
+    ""
+  ).trim();
 }
 
 function getInitialScreenName() {
@@ -194,14 +201,23 @@ function updateStoreHeader() {
 }
 
 function updateMemberUI() {
+  const urlNickname = getUrlNickname();
+  if (!state.nickname && urlNickname) {
+    state.nickname = urlNickname;
+    saveState();
+  }
+
   const nickname = getMemberNickname();
   $(".member-dot")?.classList.add("is-on");
   $("#memberShort").textContent = nickname.slice(0, 4);
 
   const nicknameInput = $("#memberNickname");
   if (nicknameInput && !nicknameInput.value) {
-    nicknameInput.value = state.nickname || getUrlNickname();
+    nicknameInput.value = nickname;
   }
+  nicknameInput?.closest("label")?.setAttribute("hidden", "");
+  $("#saveNickname")?.setAttribute("hidden", "");
+  $(".member-form .form-note")?.setAttribute("hidden", "");
 
   const activities = state.preferences.length ? state.preferences.join("、") : "尚未選擇活動";
   $("#memberSummary").innerHTML = `
@@ -525,6 +541,7 @@ function attachPreferenceFlow() {
 }
 
 function attachMemberFlow() {
+  ensureActivityContactDialog();
   $("#memberToggle")?.addEventListener("click", () => activateScreen("member"));
   $("#saveNickname")?.addEventListener("click", () => {
     state.nickname = $("#memberNickname").value.trim();
@@ -541,6 +558,15 @@ function attachMemberFlow() {
       return;
     }
 
+    pendingActivityDraft = {
+      activities: [...state.preferences],
+      time: $("#activityTime").value.trim(),
+      people: $("#activityPeople").value.trim(),
+      note: $("#activityNote").value.trim()
+    };
+    openActivityContactDialog();
+    return;
+
     const message = buildActivityMessage();
     $("#activityMessage").textContent = message;
     $("#activityOutput").hidden = false;
@@ -552,8 +578,14 @@ function attachMemberFlow() {
     submitButton.textContent = "已整理需求";
 
     try {
-      await saveActivityToBackend(message);
-      showToast("揪活動需求已送出，也可複製貼回官方 LINE。");
+      const data = await saveActivityToBackend(message);
+      if (data.notification?.ok) {
+        showToast("揪活動需求已送出，店內 LINE 已收到通知。");
+      } else if (data.notification?.attempted) {
+        showToast("需求已進後台，但 LINE 通知未成功，請檢查 LINE 設定。");
+      } else {
+        showToast("需求已進後台，LINE 通知尚未完成設定。");
+      }
     } catch {
       showToast("需求卡已產生，請複製後貼回官方 LINE。");
     } finally {
@@ -573,6 +605,129 @@ function attachMemberFlow() {
       showToast("手機若無法自動複製，請長按需求卡內容後複製。");
     }
   });
+}
+
+function ensureActivityContactDialog() {
+  if ($("#activityContactDialog")) return;
+
+  const dialog = document.createElement("div");
+  dialog.className = "modal-backdrop";
+  dialog.id = "activityContactDialog";
+  dialog.hidden = true;
+  dialog.innerHTML = `
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="activityContactTitle">
+      <form id="activityContactForm" class="modal-panel">
+        <p class="answer-label">最後一步</p>
+        <h3 id="activityContactTitle">留下聯絡資訊</h3>
+        <p class="form-note">店方會依照你選的活動與時間協助安排，請留下方便聯絡的資訊。</p>
+        <label>
+          聯絡人姓名
+          <input id="activityContactName" type="text" autocomplete="name" required />
+        </label>
+        <label>
+          手機 / LINE ID
+          <input id="activityContactMethod" type="text" placeholder="請填手機或 LINE ID" autocomplete="tel" required />
+        </label>
+        <label>
+          方便聯絡時間
+          <input id="activityContactTime" type="text" placeholder="例如：今天晚上、下午 3 點後" />
+        </label>
+        <label>
+          補充說明
+          <textarea id="activityContactNote" rows="3" placeholder="例如：希望先用 LINE 聯絡、需要快速確認"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button class="secondary-action" id="cancelActivityContact" type="button">返回修改</button>
+          <button class="primary-action" id="confirmActivityContact" type="submit">確認送出</button>
+        </div>
+      </form>
+
+      <div id="activitySuccessPanel" class="modal-panel" hidden>
+        <p class="answer-label">已送出</p>
+        <h3>已送出資訊</h3>
+        <p>店方人員將與您聯絡!!</p>
+        <button class="primary-action full" id="closeActivitySuccess" type="button">我知道了</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(dialog);
+  $("#cancelActivityContact")?.addEventListener("click", closeActivityContactDialog);
+  $("#closeActivitySuccess")?.addEventListener("click", closeActivityContactDialog);
+  $("#activityContactForm")?.addEventListener("submit", submitActivityContactForm);
+}
+
+function openActivityContactDialog() {
+  ensureActivityContactDialog();
+  $("#activityContactForm").hidden = false;
+  $("#activitySuccessPanel").hidden = true;
+  $("#activityContactName").value = getMemberNickname();
+  $("#activityContactMethod").value = "";
+  $("#activityContactTime").value = $("#activityTime").value.trim();
+  $("#activityContactNote").value = "";
+  $("#activityContactDialog").hidden = false;
+  window.setTimeout(() => $("#activityContactMethod")?.focus(), 80);
+}
+
+function closeActivityContactDialog() {
+  $("#activityContactDialog").hidden = true;
+}
+
+async function submitActivityContactForm(event) {
+  event.preventDefault();
+
+  const contact = {
+    name: $("#activityContactName").value.trim(),
+    method: $("#activityContactMethod").value.trim(),
+    time: $("#activityContactTime").value.trim(),
+    note: $("#activityContactNote").value.trim()
+  };
+
+  if (!contact.name || !contact.method) {
+    showToast("請填寫聯絡人姓名與手機 / LINE ID。");
+    return;
+  }
+
+  const finalMessage = buildActivityMessageWithContact(contact);
+  $("#activityMessage").textContent = finalMessage;
+  $("#activityOutput").hidden = false;
+
+  const submitButton = $("#confirmActivityContact");
+  const originalText = submitButton.textContent;
+  submitButton.disabled = true;
+  submitButton.textContent = "送出中...";
+
+  try {
+    const data = await saveActivityToBackend(finalMessage);
+    $("#activityContactForm").hidden = true;
+    $("#activitySuccessPanel").hidden = false;
+    $("#activityOutput").scrollIntoView({ behavior: "smooth", block: "start" });
+
+    if (data.notification?.ok) {
+      showToast("已送出資訊，店方人員將與您聯絡!!");
+    } else if (data.notification?.attempted) {
+      showToast("資料已送出，但 LINE 通知未成功，請店方檢查通知設定。");
+    } else {
+      showToast("資料已送出，店方可在後台查看。");
+    }
+  } catch {
+    showToast("資料送出失敗，請稍後再試或直接聯絡官方 LINE。");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = originalText;
+  }
+}
+
+function buildActivityMessageWithContact(contact) {
+  return [
+    buildActivityMessage(),
+    "",
+    "聯絡人資訊",
+    `聯絡人：${contact.name}`,
+    `手機 / LINE ID：${contact.method}`,
+    `方便聯絡時間：${contact.time || "未填"}`,
+    `聯絡備註：${contact.note || "未填"}`
+  ].join("\n");
 }
 
 function buildActivityMessage() {

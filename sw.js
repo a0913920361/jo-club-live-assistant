@@ -1,7 +1,8 @@
-const CACHE_NAME = "jo-club-live-assistant-v3";
+const CACHE_NAME = "jo-club-live-assistant-v5";
 const ASSETS = [
   "./",
   "./index.html",
+  "./join.html",
   "./styles.css",
   "./app.js",
   "./manifest.webmanifest",
@@ -10,6 +11,7 @@ const ASSETS = [
   "./assets/menu-coffee-dessert-drinks.jpg",
   "./assets/main-room.jpg",
   "./assets/activity-radar.svg",
+  "./assets/jo-club-invite-card-youth.jpg",
   "./assets/line-qr.png",
   "./assets/opening-poster.jpg",
   "./assets/outdoor-pillar-sign.jpg",
